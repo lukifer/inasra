@@ -42,11 +42,11 @@ def web_acronymizer(word, relephants):
 				if acro_fren[eachletter[0]].lower() in paragraph.lower():
 					paragraph = re.sub(acro_fren[eachletter[0]], f' {acro_fren[eachletter[0]].upper()}', paragraph, flags=re.IGNORECASE)
 					insert_hover = f'title="{paragraph}"'
-					#print(insert_hover)
 					break
 				else: insert_hover = f'title="no clue how {acro_fren[eachletter[0]]} relates to {word}"'
+			data_word = f"""data-word='{acro_fren[eachletter[0]]}/{eachletter[0]}'"""
 			this += f'''	<br>
-							<a href='{acro_fren[eachletter[0]]}/{eachletter[0]}'{insert_hover}>
+							<a href='javascript:void(0)' onclick='clickRelephant(this)' {data_word} {insert_hover}>
 							<button type="button">
 							<p style="font-family:monospace; line-height:.4"><font size='+2'>
 							{ourletter} </font></p></button>&emsp;
@@ -65,8 +65,9 @@ def web_acronymizer(word, relephants):
 							insert_hover = f'title="{paragraph}"'
 							break
 						else: insert_hover = f'title="no clue how {everyword} relates to {word}"'
+					data_word = f"""data-word='{everyword}/{eachletter[0]}'"""
 					this += f"""<button><p style='line-height:.7'>
-								<a href='{everyword}/{eachletter[0]}'{insert_hover}>
+								<a href='javascript:void(0)' onclick='clickWord(this)' {data_word} {insert_hover}>
 								{everyword}</a></p></button>"""
 			this += f'''</div></div>'''
 	return this
@@ -83,15 +84,31 @@ def index():
 def about():
 	return render_template('about.html')
 
-@app.route("/<word>", methods=['POST'])
-def recurs_spinalyze_post(word):
-	return redirect("/"+word)
+# /search_products?name=melon%20baller&sort_by=price
+# /search_products
 
-@app.route("/firstword/<word>")
 @app.route("/<word>", methods=['GET'])
+# @app.route("/addword", methods=['POST'])
+def recurs_spinalyze_post():
+	# print(request.values)
+	# print(request.json)
+	word, pos = request.json["word"], request.json["pos"]
+	# pos = request.args["pos"]
+	print(f'word is {word}, pos is {pos}')
+	# print(word)
+	# print(pos)
+	return '{hello: "stuff"}'
+	# return f'word is {word}, pos is {pos}'
+	# return redirect("/"+word)
+
+# @app.route("/firstword/<word>", methods=['POST'])
+@app.route("/firstword", methods=['POST'])
+# @app.route("/<word>", methods=['GET']) # Note to self: this will get split into GET and POST
+@app.route("/addword", methods=['POST']) # Note to self: this will get split into GET and POST
 def recurs_spinalyze(word):
+	word, pos = request.json["word"], request.json["pos"]
 	try:
-		import pdb; pdb.set_trace()
+		# import pdb; pdb.set_trace()
 		wordspace_word = word#.replace(' ','')
 		print(f"your wordspace_word:word = {wordspace_word}:{word}")
 		#if "(" in wordspace_word:
