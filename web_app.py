@@ -88,31 +88,20 @@ def about():
 # /search_products
 
 @app.route("/<word>", methods=['GET'])
-# @app.route("/addword", methods=['POST'])
-def recurs_spinalyze_post():
-	# print(request.values)
-	# print(request.json)
-	word, pos = request.json["word"], request.json["pos"]
-	# pos = request.args["pos"]
-	print(f'word is {word}, pos is {pos}')
-	# print(word)
-	# print(pos)
-	return '{hello: "stuff"}'
-	# return f'word is {word}, pos is {pos}'
-	# return redirect("/"+word)
-
-# @app.route("/firstword/<word>", methods=['POST'])
-@app.route("/firstword", methods=['POST'])
-# @app.route("/<word>", methods=['GET']) # Note to self: this will get split into GET and POST
-@app.route("/addword", methods=['POST']) # Note to self: this will get split into GET and POST
 def recurs_spinalyze(word):
+	# print(f'GET word is {word}')
+	relephants = db.get_word_links(word)
+	# print(f'relephants are {relephants}')
+	return web_acronymizer(word, relephants)
+
+@app.route("/addword", methods=['POST']) # Note to self: this will get split into GET and POST
+def recurs_spinalyze_post():
 	word, pos = request.json["word"], request.json["pos"]
+	# print(f'POST word is {word}')
 	try:
 		# import pdb; pdb.set_trace()
 		wordspace_word = word#.replace(' ','')
 		print(f"your wordspace_word:word = {wordspace_word}:{word}")
-		#if "(" in wordspace_word:
-		#	wordspace_word = wordspace_word.split('(')[0]
 		if word in ['favicon.ico'] + your_inasra.wordspace:	print(f'{word} is already in!')
 		else:
 			your_inasra.wordspace.append([wordspace_word, 0])
@@ -137,7 +126,7 @@ def recurs_spinalyze(word):
 
 @app.route('/first_word/', methods=['POST'])
 def first_word():
-	word = request.form['firstword']
+	word = request.json["word"]
 	with open('emptyinasra.ipuz') as this:
 		my_new_inasra = inasra.inasra(**json.loads(this.read()))
 	# my_new_inasra.Start()
@@ -149,7 +138,7 @@ def first_word():
 	my_new_inasra.write_word_to_db(word)
 	spine_id = db.add_one_inasra_spine_please(my_new_inasra.inasraid, word, 0, "x")
 
-	xword = request.form['firstword'].replace(' ','')
+	xword = request.json["word"].replace(' ','')
 	for each_char in xword:
 		my_new_inasra.add_one_row_Down()
 	my_new_inasra.add_word_vert(xword, 0 , 0)
@@ -165,6 +154,7 @@ def first_word():
 	# your_inasra = copy.deepcopy(my_new_inasra)
 	print(f"we saved u a your_inasra: {your_inasra.inasraid}")
 	print(f"nevermind the bollocks here's the your_inasra: {your_inasra.dumps()}")
+	recurs_spinalyze_post()
 	return redirect("/"+word)
 
 @app.route('/kenburns/<word>')
