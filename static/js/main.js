@@ -1,4 +1,4 @@
-function clickWord(clickedElementOrWord) {
+async function clickWord(clickedElementOrWord, endpoint = 'addword') {
   // console.log({clickedElementOrWord})
   const wordString = typeof clickedElementOrWord === 'string'
     ? clickedElementOrWord
@@ -7,7 +7,6 @@ function clickWord(clickedElementOrWord) {
       const clickedLink = clickedElement.tagName = 'A' ? clickedElement : clickedElement.parentChild
       return clickedElement.dataset.word || ''
     })()
-  // console.log({clickedElementOrWord})
   const [word, pos = null] = wordString.split('/')
 
   // console.log({pos, word})
@@ -17,17 +16,14 @@ function clickWord(clickedElementOrWord) {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
   }
-  fetch('/addword', {method: 'POST', body, headers}).then((response) => {
-    // console.log(response.json())
-    const json = response.json()
-    // console.log({json})
+  // TO LUKE AND DAFE NEXT TIME: fix the pos arg for words after the first
+  // (AND maybe infer endpoint from whether pos is present or not)
+  const response = await fetch(`/${endpoint}`, {method: 'POST', body, headers})
+  response.json().then((json) => {
     if (json.word) {
       const newWordUrl = `/${encodeURI(json.word)}`
       if (confirm(`Redirect to ${newWordUrl}`)) window.location = newWordUrl
     }
-    // const content = await rawResponse.json();
-    // do a thing?
-    // console.log('we fetched', fnord)
   })
 }
 

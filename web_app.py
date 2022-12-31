@@ -84,9 +84,6 @@ def index():
 def about():
 	return render_template('about.html')
 
-# /search_products?name=melon%20baller&sort_by=price
-# /search_products
-
 @app.route("/<word>", methods=['GET'])
 def recurs_spinalyze(word):
 	# print(f'GET word is {word}')
@@ -94,7 +91,7 @@ def recurs_spinalyze(word):
 	# print(f'relephants are {relephants}')
 	return web_acronymizer(word, relephants)
 
-@app.route("/addword", methods=['POST']) # Note to self: this will get split into GET and POST
+@app.route("/addword", methods=['POST'])
 def recurs_spinalyze_post():
 	word, pos = request.json["word"], request.json["pos"]
 	# print(f'POST word is {word}')
@@ -122,9 +119,10 @@ def recurs_spinalyze_post():
 		your_inasra.show_solution()
 		with open('currentspine.txt','w') as chacha: chacha.write(json.dumps(your_inasra.solution))
 	except: print('no SPINE yet')
-	return web_acronymizer(word, relephants)
+	web_acronymizer(word, relephants)
+	return f"""{{"word": "{word}"}}"""
 
-@app.route('/first_word/', methods=['POST'])
+@app.route('/first_word', methods=['POST'])
 def first_word():
 	word = request.json["word"]
 	with open('emptyinasra.ipuz') as this:
@@ -154,8 +152,7 @@ def first_word():
 	# your_inasra = copy.deepcopy(my_new_inasra)
 	print(f"we saved u a your_inasra: {your_inasra.inasraid}")
 	print(f"nevermind the bollocks here's the your_inasra: {your_inasra.dumps()}")
-	recurs_spinalyze_post()
-	return redirect("/"+word)
+	return recurs_spinalyze_post()
 
 @app.route('/kenburns/<word>')
 def kenburns(word):
