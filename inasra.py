@@ -10,6 +10,7 @@ from lorem import text as lorem
 import Acronymizer
 import Start_New_inasra
 import wikichompdb
+from CrystalizeByCoords import return_max_regex, turn_match_to_board,compare_freqy_to_regboards,get2planes
 from collections import OrderedDict
 
 #from inasra import inasra as inasra lol
@@ -77,9 +78,24 @@ class inasra: #
 		decohere = find_horizontal_solutions()
 		decohere = decohere + find_vertical_solutions()
 		return decohere
-	def find_words_for(self, coordinates):
-		self.set_lexicon()
-		raise InsertCheeseErr("some day I'll return a list of boardstates with a new word intersecting the given coordinates")
+	def find_words_for(self, coords):
+		"""
+			I return a list of word places that
+			include the coordinates [coords]
+			& intersect the existing xword solution
+			resulting in a new legal xword
+		"""
+		if not self.lexicon: self.set_lexicon()
+		vert, horiz = get2planes(self.solution, coords)
+		this, that = return_max_regex(horiz), return_max_regex(vert)
+		vick, huck = compare_freqy_to_regboards(self.lexicon,that),compare_freqy_to_regboards(self.lexicon,this)
+		vertical_words = [turn_match_to_board(coords, e, 'vert') for e in vick]
+		horizontal_words = [turn_match_to_board(coords, e, 'horiz') for e in huck]
+		crystal_eyes = {
+			'vertical_words':vertical_words,
+			'horizontal_words': horizontal_words
+		}
+		return crystal_eyes
 	def visualize(self, xwordfield):
 		print("+ " * len(xwordfield[0]) + "+ +")
 		for each_line in xwordfield:
@@ -89,7 +105,8 @@ class inasra: #
 		self.visualize(self.solution)
 	def show_puzzle(self):
 		self.visualize(self.puzzle)
-	def rotate(self, board): # returns a board swapped horiz & vert axes
+	def rotate(self, board): #if you are readin this you want to us swap_down_across()
+		"""returns a board swapped horiz & vert axes"""
 		return [list(row) for row in list(zip(*board))]
 	def swap_down_across(self):
 		self.clues['Down'], self.clues['Across'] = self.clues['Across'], self.clues['Down']
@@ -107,7 +124,7 @@ class inasra: #
 	def add_one_col_Across(self):
 		for each_row in self.solution: each_row.append('.')
 		self.dimensions['width'] += 1
-	def check_space(self, Across, Down):
+	def check_space(self, Down, Across):
 		if isinstance(Across, list):
 			space = ''
 			for each_space in Across:
@@ -126,21 +143,21 @@ class inasra: #
 			return space #a matchable regex
 		if isinstance(Across, int) and isinstance(Down, int):
 			return self.solution[Down][Across]
-	def add_character(self, character, Across, Down):
+	def add_character(self, character, Down, Across):
 		self.solution[Down][Across] = character
 	def range_word(self, word, fist_char_position):
 		pass # returns a list of the range of the word
-	def add_word_horiz(self, word, Across, Down):
+	def add_word_horiz(self, word, Down, Across):
 		self.clues['Across'].append(word)
 		word = list(word)
 		while word:
-			self.add_character(word.pop(0), Across, Down)
+			self.add_character(word.pop(0), Down, Across)
 			Across += 1
-	def add_word_vert(self, word, Across, Down):
+	def add_word_vert(self, word, Down, Across):
 		self.clues['Down'].append(word)
 		word = list(word)
 		while word:
-			self.add_character(word.pop(0), Across, Down)
+			self.add_character(word.pop(0), Down, Across)
 			Down += 1
 	def add_word(self, position, word, **kwargs):
 		try:
@@ -150,6 +167,27 @@ class inasra: #
 			print('submit an inasra monad')
 			return -1
 		self.lexicon.append(word)
+	def imagine(self, *args): # I'll show the board with a word you supply
+		try:
+			word, coords, orientation = args
+		except:
+			print('please supply word, coords, orientation')
+			return -1
+		try:
+			reality_board = list(map(list, self.solution))
+			if "VERT" in orientation.upper():
+				self.add_word_vert(word, *coords)
+			else:
+				self.add_word_horiz(word, *coords)
+			imaginary_board = list(map(list, self.solution))
+			self.show_solution()
+			self.solution = reality_board
+			return imaginary_board
+		except: return -2
+		"""	if we do a few things like
+		db.write.word, remove.from.lexicon, add.history
+		then we can just self.solution = imaginary_board!
+		"""
 	def db_word_obj(self, dat_word_tho):
 		word_tuples = db.db_query('''
 			SELECT id FROM word WHERE word = ?
@@ -193,14 +231,27 @@ class inasra: #
 		#		''')
 		spinewords = self.history
 		links_to_spine = db.get_multiwords_links(spinewords) # every link in every article for every word in the spine
-		import pdb; pdb.set_trace()
+		#import pdb; pdb.set_trace()
 		sorted_by_frequency = sorted(links_to_spine, key = links_to_spine.count,reverse = True)
 		ordered_set = list(OrderedDict.fromkeys(sorted_by_frequency))
 		for each_word in spinewords:
 			try: ordered_set.remove(each_word)
-			except: print(f"perhaps {each_word} isnt that great a word")
+			except: print(f"perhaps {each_word} is already part of the xword")
 		self.lexicon = ordered_set
 		return self.lexicon
+	def crystalize_imagine(self, *args):
+		new_board_reality = self.imagine(*args)
+		if type(new_board_reality) == int: return "something wrong in the imagination"
+		word, coords, orientation = args
+		self.wordspace.append([word, coords, orientation])
+		for each in enumerate(self.lexicon):
+			if each[1].upper().replace(' ','').startswith(word):
+				self.history.append(self.lexicon.pop(each[0]))
+				print(f"excised d'lexicon: {self.history[-1]}")
+				break
+		self.solution = new_board_reality
+		#self.db.stuff
+		return
 
 	def Start(self):
 		is_context_cli = True # Hardcoded for now
