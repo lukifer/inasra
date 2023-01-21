@@ -16,7 +16,7 @@ from collections import OrderedDict
 #from inasra import inasra as inasra lol
 
 class inasra: #
-	def __init__(self, origin, version, kind, copyright, author, publisher, title, intro, empty, dimensions, puzzle, clues, solution, lexicon, wordspace, history, inasraid, *args, **kwargs):
+	def __init__(self, origin, version, kind, copyright, author, publisher, title, intro, empty, dimensions, puzzle, clues, solution, lexicon, wordspace, history, inasraid = None, *args, **kwargs):
 		self.origin = origin
 		self.version = version
 		self.kind = kind
@@ -243,7 +243,7 @@ class inasra: #
 	def crystalize_imagine(self, *args):
 		new_board_reality = self.imagine(*args)
 		if type(new_board_reality) == int:
-			return "something wrong in the imagination"  
+			return "something wrong in the imagination"
 		else:
 			print('gettabugow')
 		word, coords, orientation = args
