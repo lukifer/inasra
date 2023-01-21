@@ -33,3 +33,14 @@ function clickRelephant(clickedElement) {
   clickWord(clickedElement)
   // console.log('clickRelephant', relephant)
 }
+
+function siblingCount(node) {
+	return [...node.parentElement.childNodes].indexOf(node);
+}
+
+function klik(btn) {
+	const x = siblingCount(btn.parentElement.parentElement);
+	const y = siblingCount(btn.parentElement);
+  // FIXME: this is hardcoded nonsense for testing:
+	document.location = `/cluez/lukifer/usufruct?action=click&x=${x}&y=${y}`;
+}
