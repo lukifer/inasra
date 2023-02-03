@@ -3,17 +3,23 @@
 	<head>
 		<meta charset="utf-8">
 		<title>inasra</title>
+		<script type="text/javascript" src="/static/js/main.js"></script>
 	</head>
 	<body>
+		<!-- TODO: capture this form submit action and send via JS -->
+		<!--
 		<form action="/first_word/" method="post">
-		<div>
-			<p style="text-align:center">
-			<label for="example"><font size='+3'><br><br><br><br> this is where inasra happens</font><br></label>
-		<input type="text" id="example" size="42" placeholder="What do you offer to inasra" name="firstword">
-		</div>
-		<div style="text-align:center">
-			<input type="submit" value="beginasrazion"></p>
-		</div>
+		-->
+			<div>
+				<p style="text-align:center">
+				<label for="example"><font size='+3'><br><br><br><br> this is where inasra happens</font><br></label>
+				<input type="text" id="first_word" size="42" placeholder="What do you offer to inasra" name="word">
+			</div>
+			<div style="text-align:center">
+				<input type="button" value="beginasrazion" onClick="clickWord(document.getElementById('first_word').value, 'first_word')"></p>
+			</div>
+		<!--
 		</form>
+		-->
 	</body>
 </html>

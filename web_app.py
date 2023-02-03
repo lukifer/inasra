@@ -5,6 +5,7 @@ import os
 os.system('./scripts/pips.sh -q > /dev/null')
 os.system('./scripts/initdb.sh > /dev/null')
 
+from tabulate import tabulate
 from flask import Flask, request, redirect, render_template, url_for
 from subprocess import Popen, PIPE, STDOUT, check_output
 import json, re, os, pwd, Acronymizer as acronymizer
@@ -40,7 +41,9 @@ def web_acronymizer(word, relephants):
 		except: pass
 	shuffle(all_image_urls)
 
-	this = render_template('word.html', word=word, summary=summary, wordupper=word[0].upper(), wordcapper=word.capitalize(), images=all_image_urls, imagequantity=len(all_image_urls))
+	peak_buttons = re.sub('>([\S\s])<', r'><button onclick=crystalization(spine, wordbones)>\1</button><', tabulate(your_inasra.solution, tablefmt='html'))
+
+	this = render_template('word.html', word=word, summary=summary, wordupper=word[0].upper(), wordcapper=word.capitalize(), images=all_image_urls, imagequantity=len(all_image_urls), peak_buttons=peak_buttons)
 	for eachletter in enumerate(word): #Click Me!
 		if eachletter[1] in [' ', '-', '.', ',','&'] or eachletter[0] == 0:
 			this += ""
@@ -52,11 +55,11 @@ def web_acronymizer(word, relephants):
 				if acro_fren[eachletter[0]].lower() in paragraph.lower():
 					paragraph = re.sub(acro_fren[eachletter[0]], f' {acro_fren[eachletter[0]].upper()}', paragraph, flags=re.IGNORECASE)
 					insert_hover = f'title="{paragraph}"'
-					#print(insert_hover)
 					break
 				else: insert_hover = f'title="no clue how {acro_fren[eachletter[0]]} relates to {word}"'
+			data_word = f"""data-word='{acro_fren[eachletter[0]]}/{eachletter[0]}'"""
 			this += f'''	<br>
-							<a href='{acro_fren[eachletter[0]]}/{eachletter[0]}'{insert_hover}>
+							<a href='javascript:void(0)' onclick='clickRelephant(this)' {data_word} {insert_hover}>
 							<button type="button">
 							<p style="font-family:monospace; line-height:.4"><font size='+2'>
 							{ourletter} </font></p></button>&emsp;
@@ -75,8 +78,9 @@ def web_acronymizer(word, relephants):
 							insert_hover = f'title="{paragraph}"'
 							break
 						else: insert_hover = f'title="no clue how {everyword} relates to {word}"'
+					data_word = f"""data-word='{everyword}/{eachletter[0]}'"""
 					this += f"""<button><p style='line-height:.7'>
-								<a href='{everyword}/{eachletter[0]}'{insert_hover}>
+								<a href='javascript:void(0)' onclick='clickWord(this)' {data_word} {insert_hover}>
 								{everyword}</a></p></button>"""
 			this += f'''</div></div>'''
 	return this
@@ -93,19 +97,21 @@ def index():
 def about():
 	return render_template('about.html')
 
-@app.route("/<word>", methods=['POST'])
-def recurs_spinalyze_post(word):
-	return redirect("/"+word)
-
-@app.route("/firstword/<word>")
 @app.route("/<word>", methods=['GET'])
 def recurs_spinalyze(word):
+	# print(f'GET word is {word}')
+	relephants = db.get_word_links(word)
+	# print(f'relephants are {relephants}')
+	return web_acronymizer(word, relephants)
+
+@app.route("/addword", methods=['POST'])
+def recurs_spinalyze_post():
+	word, pos = request.json["word"], request.json["pos"]
+	# print(f'POST word is {word}')
 	try:
-		#import pdb; pdb.set_trace()
+		# import pdb; pdb.set_trace()
 		wordspace_word = word#.replace(' ','')
 		print(f"your wordspace_word:word = {wordspace_word}:{word}")
-		#if "(" in wordspace_word:
-		#	wordspace_word = wordspace_word.split('(')[0]
 		if word in ['favicon.ico'] + your_inasra.wordspace:	print(f'{word} is already in!')
 		else:
 			your_inasra.wordspace.append([wordspace_word, 0])
@@ -126,11 +132,12 @@ def recurs_spinalyze(word):
 		your_inasra.show_solution()
 		with open('currentspine.txt','w') as chacha: chacha.write(json.dumps(your_inasra.solution))
 	except: print('no SPINE yet')
-	return web_acronymizer(word, relephants)
+	web_acronymizer(word, relephants)
+	return f"""{{"word": "{word}"}}"""
 
-@app.route('/first_word/', methods=['POST'])
+@app.route('/first_word', methods=['POST'])
 def first_word():
-	word = request.form['firstword']
+	word = request.json["word"]
 	with open('emptyinasra.ipuz') as this:
 		my_new_inasra = inasra.inasra(**json.loads(this.read()))
 	# my_new_inasra.Start()
@@ -141,7 +148,7 @@ def first_word():
 	my_new_inasra.write_self_to_db()
 	spine_id = db.add_one_inasra_spine_please(my_new_inasra.inasraid, word, 0, "x")
 
-	xword = request.form['firstword'].replace(' ','')
+	xword = request.json["word"].replace(' ','')
 	for each_char in xword:
 		my_new_inasra.add_one_row_Down()
 	my_new_inasra.add_word_vert(xword, 0 , 0)
@@ -157,7 +164,7 @@ def first_word():
 	# your_inasra = copy.deepcopy(my_new_inasra)
 	print(f"we saved u a your_inasra: {your_inasra.inasraid}")
 	print(f"nevermind the bollocks here's the your_inasra: {your_inasra.dumps()}")
-	return redirect("/"+word)
+	return recurs_spinalyze_post()
 
 @app.route('/kenburns/<word>')
 def kenburns(word):
