@@ -182,13 +182,6 @@ class TestStringMethods(unittest.TestCase):
 	def test_db_save_and_load(self):
 		fartipuz = inasra.load_test()
 		fartid = fartipuz.write_self_to_db()
-		fartspines = db.get_all_spines(fartid)
-		nextpos = 0
-		for idx, ligament_tuple in enumerate(fartipuz.wordspace):
-			history_word = fartipuz.history[idx]
-			direction = "x" if idx % 2 == 0 else "y"
-			db.add_one_inasra_spine_please(fartid, history_word, nextpos, direction)
-			nextpos = ligament_tuple[1]
 
 		freshfart = inasra.load_db(fartid)
 		self.assertEqual(json.dumps(freshfart.wordspace), json.dumps(fartipuz.wordspace))

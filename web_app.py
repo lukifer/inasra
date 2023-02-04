@@ -156,6 +156,7 @@ def first_word():
 	print("did wikipedia_grab_chomp")
 	my_new_inasra.title = word
 	my_new_inasra.write_self_to_db()
+	# TODO: the following line might be obsolete now, write_self_to_db now writes spines also
 	spine_id = db.add_one_inasra_spine_please(my_new_inasra.inasraid, word, 0, "x")
 
 	xword = request.json["word"].replace(' ','')

@@ -192,10 +192,19 @@ class inasra: #
 		if word_tuples:
 			return word_tuples[0]
 		return None
-		# word_tuple = word_tuples[0]
-		# return {"id": word_tuple[0]}
 	def write_self_to_db(self):
-		self.inasraid = db.db_insert("inasra", name = self.title)
+		if self.inasraid is None:
+			self.inasraid = db.db_insert("inasra", name = self.title)
+		existing_spines = db.get_all_spines(self.inasraid)
+		existing_spines_len = len(existing_spines)
+		if len(self.history) > existing_spines_len:
+			nextpos = 0
+			for idx, ligament_tuple in enumerate(self.wordspace):
+				if idx >= existing_spines_len:
+					history_word = self.history[idx]
+					direction = "x" if idx % 2 == 0 else "y"
+					db.add_one_inasra_spine_please(self.inasraid, history_word, nextpos, direction)
+				nextpos = ligament_tuple[1]
 		return self.inasraid
 	def write_word_to_db(self, word):
 		print("You done called a deprecated func: write_word_to_db")
