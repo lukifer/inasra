@@ -33,10 +33,7 @@ class inasra: #
 		self.lexicon = lexicon # a list of relevant words ordered by relevance. The relephant herd.
 		self.wordspace = wordspace # the list of words used in the order used.  This game is played by moving words from lexicon to wordspace
 		self.history = history # the list of operations that have led to the current board state
-		try: self.inasraid = inasraid
-		except:
-			if hasattr(self, 'inasraid') == False:
-				self.inasraid = None
+		self.inasraid = inasraid
 	def resize(self, width, height):
 		print(f"old width & height:  {self.dimensions['width']}, {self.dimensions['height']}")
 		while len(self.solution[0]) > width:
@@ -199,6 +196,7 @@ class inasra: #
 		# return {"id": word_tuple[0]}
 	def write_self_to_db(self):
 		self.inasraid = db.db_insert("inasra", name = self.title)
+		return self.inasraid
 	def write_word_to_db(self, word):
 		print("You done called a deprecated func: write_word_to_db")
 		word_obj = self.db_word_obj(word)
@@ -355,6 +353,22 @@ class inasra: #
 		# linkid = db.db_insert("inasra_words", inasra_id = inasraid, word_id = choice_word_ids[0].id, x = 0, y = 0, direction = 'x')
 
 		#self.Start_New_inasra.main()
+
+def load_db(inasraid: int):
+	with open('emptyinasra.ipuz') as fill: ths = inasra(**json.loads(fill.read()))
+	ths.inasraid = inasraid
+	spines = db.get_all_spines(inasraid)
+	wordspace = []
+	history = []
+	spineslen = len(spines)
+	for idx, spine in enumerate(spines):
+		# TODO: clean up disambiguator (parens and such)
+		pos = 0 if idx == spineslen - 1 else spines[idx + 1]["choice_pos"]
+		wordspace.append([spine["word"].upper().replace(' ',''), pos])
+		history.append(spine["word"])
+	ths.wordspace = wordspace
+	ths.history = history
+	return ths
 
 def load_test():
 	with open('fartpuzzle.ipuz') as yet:

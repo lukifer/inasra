@@ -4,7 +4,8 @@ def make_word_question_marks(wird):
 	questionmarks = ''
 	for e in wird: questionmarks = questionmarks + '?,'
 	return questionmarks[0:-1]
-def db_insert(table, **values):
+
+def db_insert(table: str, **values):
 	connection = sqlite3.connect('inasra.sqlite3')
 	cursor = connection.cursor()
 	vals = []
@@ -18,7 +19,8 @@ def db_insert(table, **values):
 	connection.close()
 	#print(f"cursor lastrowid is {cursor.lastrowid} m'lord")
 	return cursor.lastrowid
-def db_query(query, *values):
+
+def db_query(query: str, *values):
 	connection = sqlite3.connect('inasra.sqlite3')
 	cursor = connection.cursor()
 	cursor.execute(query, values)
@@ -33,14 +35,18 @@ def db_query(query, *values):
 		final.append(thing)
 	return final
 
-def get_spine_for_inasra(inasraid: int):
-	we_are_spines = db_query('''
+def get_all_spines(inasraid: int):
+	return db_query('''
 		SELECT isp.dimension, isp.choice_pos, w.word, pw.word as prev_word
 		FROM inasra_spine isp
 		INNER JOIN word w ON w.id = isp.word_id
 		LEFT JOIN word pw ON pw.id = isp.prev_word_id
 		WHERE isp.inasra_id = ?
+		ORDER BY isp.id ASC
 	''', inasraid)
+
+def get_spine_for_inasra(inasraid: int):
+	we_are_spines = get_all_spines(inasraid)
 	if len(we_are_spines) > 0:
 		return we_are_spines[0]
 	else:
@@ -107,7 +113,7 @@ def get_word_value(word: str, key: str):
 	else:
 		return None
 
-def get_latest_spine_coords(inasraid):
+def get_latest_spine_coords(inasraid: int):
 	lastest_word_id = db_query_value("SELECT MAX(id) FROM inasra_spine WHERE inasra_id = ?", [inasraid])
 	current_dimension = db_query_value("SELECT dimension FROM inasra_spine WHERE id = ?", [lastest_word_id])
 	sumx = db_query_value("SELECT SUM(choice_pos) FROM inasra_spine WHERE inasra_id = ? AND dimension = 'x' AND id != ?", [inasraid, lastest_word_id])
@@ -145,7 +151,7 @@ def add_one_inasra_spine_please(inasra_id: int, word: str, choice_pos: int, *arg
 	if prev_word == None:
 		prev_word_id = None
 	else:
-		prev_word_id = prev_word.id
+		prev_word_id = prev_word["id"]
 
 	spineid = db_insert("inasra_spine",
 		inasra_id = inasra_id,
@@ -176,14 +182,14 @@ def get_word_summary(word: str):
 def get_word_content(word: str):
 	return get_word_value(word, "content")
 
-def db_query_value(key, query, *values):
+def db_query_value(key: str, query: str, *values):
 	row = db_query_one(query, *values)
 	if row == None:
 		return None
 	else:
 		return row[key]
 
-def db_query_one(query, *values):
+def db_query_one(query: str, *values):
 	rows = db_query(query, *values)
 	if len(rows) < 1:
 		return None

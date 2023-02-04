@@ -9,6 +9,7 @@ from functools import reduce
 # setting path
 # sys.path.append('../parentdirectory')
 sys.path.append('../db.py')
+sys.path.append('../inasra.py')
 
 # importing
 # from parentdirectory.geeks import geek_method
@@ -17,11 +18,12 @@ sys.path.append('../db.py')
 # sys.path.append('/Users/lukifer/Projects/inasra/db.py')
 # sys.path.append('../db.py')
 
-import db
-
 current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
+
+import db
+import inasra
 
 import Start_New_inasra
 from legacy import lambda_experiment as ws
@@ -120,7 +122,7 @@ class TestStringMethods(unittest.TestCase):
 
 	def test_article_fetches(self):
 		# TODO: make a persistent / consistent database for testing
-		correlation_links = db.get_words_links(['correlation', 'catalyst'], True)
+		correlation_links = db.get_multiwords_links(['correlation', 'catalyst'], True)
 		self.assertEqual(len(correlation_links), 910)
 		self.assertEqual(correlation_links[0], 'ACS Nano')
 		self.assertEqual(correlation_links[-1], 'four-Dimethylaminopyridine')
@@ -176,6 +178,21 @@ class TestStringMethods(unittest.TestCase):
 		#expectedRegexes = ('p.{1,2}')
 		# self.assertEqual(ws.getRegexesForLetter(wordspace, 2, 0, 'x'), expectedRegexes)
 		# self.assertEqual(ws.getRegexesForLetter(wordspace, 0, 2, 'y'), expectedRegexes)
+
+	def test_db_save_and_load(self):
+		fartipuz = inasra.load_test()
+		fartid = fartipuz.write_self_to_db()
+		fartspines = db.get_all_spines(fartid)
+		nextpos = 0
+		for idx, ligament_tuple in enumerate(fartipuz.wordspace):
+			history_word = fartipuz.history[idx]
+			direction = "x" if idx % 2 == 0 else "y"
+			db.add_one_inasra_spine_please(fartid, history_word, nextpos, direction)
+			nextpos = ligament_tuple[1]
+
+		freshfart = inasra.load_db(fartid)
+		self.assertEqual(json.dumps(freshfart.wordspace), json.dumps(fartipuz.wordspace))
+		self.assertEqual(json.dumps(freshfart.history), json.dumps(fartipuz.history))
 
 if __name__ == '__main__':
 	unittest.main()

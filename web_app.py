@@ -6,7 +6,8 @@ os.system('./scripts/pips.sh -q > /dev/null')
 os.system('./scripts/initdb.sh > /dev/null')
 
 from tabulate import tabulate
-from flask import Flask, request, redirect, render_template, url_for
+from flask import Flask, request, redirect, render_template, url_for, session
+from flask_session import Session
 from subprocess import Popen, PIPE, STDOUT, check_output
 import json, re, os, pwd, Acronymizer as acronymizer
 import copy
@@ -17,13 +18,19 @@ import inasra
 import db
 
 app = Flask(__name__)
-
-global your_inasra
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
 
 with open('emptyinasra.ipuz') as this:
-	your_inasra = inasra.inasra(**json.loads(this.read()))
+	emptyinasra = inasra.inasra(**json.loads(this.read()))
 
-def web_acronymizer(word, relephants):
+def get_inasra():
+	return session.get("your_inasra", emptyinasra)
+
+def save_inasra(your_inasra):
+	session['your_inasra'] = your_inasra
+
+def web_acronymizer(word: str, relephants, your_inasra):
 	acro_fren = acronymizer.acronymize(word, relephants)
 	summary = db.get_word_summary(word)
 	cont = db.get_word_content(word)
@@ -88,9 +95,7 @@ def web_acronymizer(word, relephants):
 @app.route("/home")
 @app.route("/")
 def index():
-	with open('emptyinasra.ipuz') as this:
-		your_inasra = inasra.inasra(**json.loads(this.read()))
-	#with open('.eggspine.txt','w') as egg: egg.write('')
+	save_inasra(emptyinasra)
 	return render_template('home.html')
 
 @app.route("/about")
@@ -98,22 +103,24 @@ def about():
 	return render_template('about.html')
 
 @app.route("/<word>", methods=['GET'])
-def recurs_spinalyze(word):
+def recurs_spinalyze(word: str):
 	# print(f'GET word is {word}')
 	relephants = db.get_word_links(word)
 	# print(f'relephants are {relephants}')
-	return web_acronymizer(word, relephants)
+	return web_acronymizer(word, relephants, get_inasra())
 
 @app.route("/addword", methods=['POST'])
 def recurs_spinalyze_post():
+	your_inasra = get_inasra()
 	word, pos = request.json["word"], request.json["pos"]
-	# print(f'POST word is {word}')
+	print(f'POST word is {word}, POST pos is {pos}, inasraid is {your_inasra.inasraid}')
 	try:
 		# import pdb; pdb.set_trace()
 		wordspace_word = word#.replace(' ','')
 		print(f"your wordspace_word:word = {wordspace_word}:{word}")
 		if word in ['favicon.ico'] + your_inasra.wordspace:	print(f'{word} is already in!')
 		else:
+			build_the_spine(word, pos)
 			your_inasra.wordspace.append([wordspace_word, 0])
 			your_inasra.history.append(word)
 		print(f'your history:{your_inasra.history}')
@@ -123,20 +130,23 @@ def recurs_spinalyze_post():
 	if len(relephants) < 1:
 		wikichomp.wikipedia_grab_chomp(word)
 		relephants = db.get_word_links(word)
-	print(f"id:{your_inasra.inasraid} wordspace:{your_inasra.wordspace}, yo!")
+	print(f"build spine id:{your_inasra.inasraid} wordspace:{your_inasra.wordspace}, yo!")
+
 	try:
 		#import pdb; pdb.set_trace()
-		spine_pos = 0 # fixme
-		#spine_id = db.add_one_inasra_spine_please(your_inasra.inasraid, wordspace_word, spine_pos)
-		your_inasra.solution = spinylize.make_the_spine(your_inasra.wordspace)
+		print(f"yosolution: {your_inasra.solution}")
+		# spine_id = db.add_one_inasra_spine_please(your_inasra.inasraid, wordspace_word, pos)
+		# your_inasra.solution = spinylize.make_the_spine(your_inasra.wordspace)
 		your_inasra.show_solution()
 		with open('currentspine.txt','w') as chacha: chacha.write(json.dumps(your_inasra.solution))
 	except: print('no SPINE yet')
-	web_acronymizer(word, relephants)
-	return f"""{{"word": "{word}"}}"""
+	# web_acronymizer(word, relephants)
+	save_inasra(your_inasra)
+	return f"""{{"word": "{word}", "success": true}}"""
 
 @app.route('/first_word', methods=['POST'])
 def first_word():
+	your_inasra = get_inasra()
 	word = request.json["word"]
 	with open('emptyinasra.ipuz') as this:
 		my_new_inasra = inasra.inasra(**json.loads(this.read()))
@@ -160,14 +170,13 @@ def first_word():
 	# DEPRECATED
 	# your_inasra = my_new_inasra
 	your_inasra = copy.deepcopy(my_new_inasra)
-	# global your_inasra
-	# your_inasra = copy.deepcopy(my_new_inasra)
 	print(f"we saved u a your_inasra: {your_inasra.inasraid}")
 	print(f"nevermind the bollocks here's the your_inasra: {your_inasra.dumps()}")
+	save_inasra(your_inasra)
 	return recurs_spinalyze_post()
 
 @app.route('/kenburns/<word>')
-def kenburns(word):
+def kenburns(word: str):
 	# lifted from https://codepen.io/anon/pen/XKWMaR
 	all_image_urls = db.get_word_images(word)
 	# these trashpictures really need to be excised before database insertion
@@ -206,16 +215,17 @@ def kenburns(word):
 def framing(word):
 	return render_template('framingdevice.html', word=word)
 
-@app.route("/<word>/<spine_pos>")
-def build_the_spine(word, spine_pos):
+def build_the_spine(word: str, spine_pos: int):
+	your_inasra = get_inasra()
 	try: your_inasra.wordspace[-1] = [your_inasra.wordspace[-1][0], spine_pos]
-	except: print(f"didn't add position to {your_inasra.wordspace}")
+	except: print(f"didn't add position to {your_inasra.wordspace} with spine_pos {spine_pos}")
 	spine_id = db.add_one_inasra_spine_please(your_inasra.inasraid, word, spine_pos)
-	print(f"spine_pos: my word is {word}, my spine id is {spine_id}")
-	return redirect(f'/{word}')
+	save_inasra(your_inasra)
+	return spine_id
 
 @app.route('/spine_peak')
 def spine_look():
+	your_inasra = get_inasra()
 	try:
 		#from pdb import set_trace; set_trace()
 		return check_output(['./xword2html.py',json.dumps(your_inasra.solution)])
